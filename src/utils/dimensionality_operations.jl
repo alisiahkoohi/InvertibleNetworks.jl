@@ -4,20 +4,23 @@
 
 export squeeze, unsqueeze, wavelet_squeeze, wavelet_unsqueeze, tensor_split, tensor_cat
 
-####################################################################################################
 # Squeeze and unsqueeze
 
 """
     Y = squeeze(X; pattern="column")
 
  Reshape input image such that each spatial dimension is reduced by a factor
- of 2, while the number of channels is increased by a factor of 4. 
+ of 2, while the number of channels is increased by a factor of 4 (4D input) or
+ 8 (4D inout).
 
- *Input*: 
- 
- - `X`: 4D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize`
+ *Input*:
+
+ - `X`: 4D or 5D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize` (4D)
+    or `nx` x `ny` x `nz` x `n_channel` x `batchsize` (5D)
 
  - `pattern`: Squeezing pattern
+
+    4D:
 
         1 2 3 4        1 1 3 3        1 3 1 3
         1 2 3 4        1 1 3 3        2 4 2 4
@@ -26,9 +29,12 @@ export squeeze, unsqueeze, wavelet_squeeze, wavelet_unsqueeze, tensor_split, ten
 
         column          patch       checkerboard
 
+
  *Output*:
- 
- - `Y`: Reshaped tensor of dimensions `nx/2` x `ny/2` x `n_channel*4` x `batchsize`
+
+ - `Y`: Reshaped tensor of dimensions `nx/2` x `ny/2` x `n_channel*4` x `batchsize` (4D)
+    or `nx/2` x `ny/2` x `nz/2` x `n_channel*8` x `batchsize` (5D)
+
 
  See also: [`unsqueeze`](@ref), [`wavelet_squeeze`](@ref), [`wavelet_unsqueeze`](@ref)
 """
@@ -36,26 +42,73 @@ function squeeze(X::AbstractArray{T,4}; pattern="column") where T
 
     # Dimensions
     nx_in, ny_in, nc_in, batchsize = size(X)
-    if mod(nx_in, 2) == 1 || mod(ny_in, 2) == 1 
+    if mod(nx_in, 2) == 1 || mod(ny_in, 2) == 1
         throw("Input dimensions must be multiple of 2")
     end
     nx_out = Int(round(nx_in/2))
     ny_out = Int(round(ny_in/2))
-    nc_out = Int(round(nc_in*4))
+    nc_out = nc_in*4
     Y = cuzeros(X, nx_out, ny_out, nc_out, batchsize)
 
     if pattern == "column"
         Y = reshape(X, nx_out, ny_out, nc_out, batchsize)
     elseif pattern == "patch"
-        Y[:, :, 1: nc_in, :] = X[1:nx_out, 1:ny_out, 1:nc_in, :]
-        Y[:, :, nc_in+1: 2*nc_in, :] = X[nx_out+1:end, 1:ny_out, 1:nc_in, :]
-        Y[:, :, 2*nc_in+1: 3*nc_in, :] = X[1:nx_out, ny_out+1:end, 1:nc_in, :]
-        Y[:, :, 3*nc_in+1: 4*nc_in, :] = X[nx_out+1:end, ny_out+1:end, 1:nc_in, :]
+        Y[:, :, 1:nc_in, :] = X[1:nx_out, 1:ny_out, 1:nc_in, :]
+        Y[:, :, nc_in+1:2*nc_in, :] = X[nx_out+1:end, 1:ny_out, 1:nc_in, :]
+        Y[:, :, 2*nc_in+1:3*nc_in, :] = X[1:nx_out, ny_out+1:end, 1:nc_in, :]
+        Y[:, :, 3*nc_in+1:4*nc_in, :] = X[nx_out+1:end, ny_out+1:end, 1:nc_in, :]
     elseif pattern == "checkerboard"
-        Y[:, :, 1: nc_in, :] = X[1:2:nx_in, 1:2:ny_in, 1:nc_in, :]
-        Y[:, :, nc_in+1: 2*nc_in, :] = X[2:2:nx_in, 1:2:ny_in, 1:nc_in, :]
-        Y[:, :, 2*nc_in+1: 3*nc_in, :] = X[1:2:nx_in, 2:2:ny_in, 1:nc_in, :]
-        Y[:, :, 3*nc_in+1: 4*nc_in, :] = X[2:2:nx_in, 2:2:ny_in, 1:nc_in, :]
+        Y[:, :, 1:nc_in, :] = X[1:2:nx_in, 1:2:ny_in, 1:nc_in, :]
+        Y[:, :, nc_in+1:2*nc_in, :] = X[2:2:nx_in, 1:2:ny_in, 1:nc_in, :]
+        Y[:, :, 2*nc_in+1:3*nc_in, :] = X[1:2:nx_in, 2:2:ny_in, 1:nc_in, :]
+        Y[:, :, 3*nc_in+1:4*nc_in, :] = X[2:2:nx_in, 2:2:ny_in, 1:nc_in, :]
+    else
+        throw("Specified pattern not defined.")
+    end
+    return Y
+end
+
+function squeeze(X::AbstractArray{T,5}; pattern="column") where T
+
+    # Dimensions
+    nx_in, ny_in, nz_in, nc_in, batchsize = size(X)
+    if mod(nx_in, 2) == 1 || mod(ny_in, 2) == 1 || mod(nz_in, 2) == 1
+        throw("Input dimensions must be multiple of 2")
+    end
+    nx_out = Int(round(nx_in/2))
+    ny_out = Int(round(ny_in/2))
+    nz_out = Int(round(nz_in/2))
+    nc_out = nc_in*8
+    Y = cuzeros(X, nx_out, ny_out, nz_out, nc_out, batchsize)
+
+    if pattern == "column"
+        Y = reshape(X, nx_out, ny_out, nz_out, nc_out, batchsize)
+    elseif pattern == "patch"
+        Y[:, :, :, 1:nc_in, :] = X[1:nx_out, 1:ny_out, 1:nz_out,
+                                   1:nc_in, :]
+        Y[:, :, :, nc_in+1:2*nc_in, :] = X[nx_out+1:end, 1:ny_out, 1:nz_out,
+                                           1:nc_in, :]
+        Y[:, :, :, 2*nc_in+1:3*nc_in, :] = X[1:nx_out, ny_out+1:end, 1:nz_out,
+                                             1:nc_in, :]
+        Y[:, :, :, 3*nc_in+1:4*nc_in, :] = X[nx_out+1:end, ny_out+1:end, 1:nz_out,
+                                             1:nc_in, :]
+        Y[:, :, :, 4*nc_in+1:5*nc_in, :] = X[1:nx_out, 1:ny_out, nz_out+1:end,
+                                             1:nc_in, :]
+        Y[:, :, :, 5*nc_in+1:6*nc_in, :] = X[nx_out+1:end, 1:ny_out, nz_out+1:end,
+                                             1:nc_in, :]
+        Y[:, :, :, 6*nc_in+1:7*nc_in, :] = X[1:nx_out, ny_out+1:end, nz_out+1:end,
+                                             1:nc_in, :]
+        Y[:, :, :, 7*nc_in+1:8*nc_in, :] = X[nx_out+1:end, ny_out+1:end, nz_out+1:end,
+                                             1:nc_in, :]
+    elseif pattern == "checkerboard"
+        Y[:, :, :, 1:nc_in, :] = X[1:2:nx_in, 1:2:ny_in, 1:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, nc_in+1:2*nc_in, :] = X[2:2:nx_in, 1:2:ny_in, 1:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 2*nc_in+1:3*nc_in, :] = X[1:2:nx_in, 2:2:ny_in, 1:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 3*nc_in+1:4*nc_in, :] = X[2:2:nx_in, 2:2:ny_in, 1:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 4*nc_in+1:5*nc_in, :] = X[1:2:nx_in, 1:2:ny_in, 2:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 5*nc_in+1:6*nc_in, :] = X[2:2:nx_in, 1:2:ny_in, 2:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 6*nc_in+1:7*nc_in, :] = X[1:2:nx_in, 2:2:ny_in, 2:2:nz_in, 1:nc_in, :]
+        Y[:, :, :, 7*nc_in+1:8*nc_in, :] = X[2:2:nx_in, 2:2:ny_in, 2:2:nz_in, 1:nc_in, :]
     else
         throw("Specified pattern not defined.")
     end
@@ -66,15 +119,17 @@ end
 """
     X = unsqueeze(Y; pattern="column")
 
- Undo squeezing operation by reshaping input image such that each spatial dimension is 
- increased by a factor of 2, while the number of channels is decreased by a factor of 4. 
+ Undo squeezing operation by reshaping input image such that each spatial dimension is
+ increased by a factor of 2, while the number of channels is decreased by a factor of 4
+ (4D input) or 8 (4D inout).
 
- *Input*: 
- 
- - `Y`: 4D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize`
+ *Input*:
+
+ - `Y`: 4D or 5D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize` (4D)
+    or `nx` x `ny` x `nz` x `n_channel` x `batchsize` (5D)
 
  - `pattern`: Squeezing pattern
- 
+
             1 2 3 4        1 1 3 3        1 3 1 3
             1 2 3 4        1 1 3 3        2 4 2 4
             1 2 3 4        2 2 4 4        1 3 1 3
@@ -83,8 +138,9 @@ end
             column          patch       checkerboard
 
  *Output*:
- 
- - `X`: Reshaped tensor of dimensions `nx*2` x `ny*2` x `n_channel/4` x `batchsize`
+
+ - `X`: Reshaped tensor of dimensions `nx*2` x `ny*2` x `n_channel/4` x `batchsize` (4D)
+    or `nx*2` x `ny*2` x `nz*2` x `n_channel/8` x `batchsize` (5D)
 
  See also: [`squeeze`](@ref), [`wavelet_squeeze`](@ref), [`wavelet_unsqueeze`](@ref)
 """
@@ -92,11 +148,11 @@ function unsqueeze(Y::AbstractArray{T,4}; pattern="column") where T
 
     # Dimensions
     nx_in, ny_in, nc_in, batchsize = size(Y)
-    if mod(nx_in, 2) == 1 || mod(ny_in, 2) == 1 
-        throw("Input dimensions must be multiple of 2")
+    if mod(nc_in, 4) != 0
+        throw("Channel dimensions must be multiple of 4")
     end
-    nx_out = Int(round(nx_in*2))
-    ny_out = Int(round(ny_in*2))
+    nx_out = nx_in*2
+    ny_out = ny_in*2
     nc_out = Int(round(nc_in/4))
     X = cuzeros(Y, nx_out, ny_out, nc_out, batchsize)
 
@@ -122,6 +178,67 @@ function unsqueeze(X::AbstractArray{T,4}, Y::AbstractArray{T,4}; pattern="column
     return unsqueeze(X; pattern=pattern), unsqueeze(Y; pattern=pattern)
 end
 
+function unsqueeze(Y::AbstractArray{T,5}; pattern="column") where T
+
+    # Dimensions
+    nx_in, ny_in, nz_in, nc_in, batchsize = size(Y)
+    if mod(nc_in, 8) != 0
+        throw("Channel dimension must be multiple of 8")
+    end
+    nx_out = nx_in*2
+    ny_out = ny_in*2
+    nz_out = nz_in*2
+    nc_out = Int(round(nc_in/8))
+    X = cuzeros(Y, nx_out, ny_out, nz_out, nc_out, batchsize)
+
+    if pattern == "column"
+        X = reshape(Y, nx_out, ny_out, nz_out, nc_out, batchsize)
+    elseif pattern == "patch"
+        X[1:nx_in, 1:ny_in, 1:nz_in, 1:nc_out, :] = Y[:, :, :,
+                                                      1:nc_out, :]
+        X[nx_in+1:end, 1:ny_in, 1:nz_in, 1:nc_out, :] = Y[:, :, :,
+                                                          nc_out+1:2*nc_out, :]
+        X[1:nx_in, ny_in+1:end, 1:nz_in, 1:nc_out, :] = Y[:, :, :,
+                                                          2*nc_out+1:3*nc_out, :]
+        X[nx_in+1:end, ny_in+1:end, 1:nz_in, 1:nc_out, :] = Y[:, :, :,
+                                                              3*nc_out+1:4*nc_out, :]
+
+        X[1:nx_in, 1:ny_in, nz_in+1:end, 1:nc_out, :] = Y[:, :, :,
+                                                          4*nc_out+1:5*nc_out, :]
+        X[nx_in+1:end, 1:ny_in, nz_in+1:end, 1:nc_out, :] = Y[:, :, :,
+                                                              5*nc_out+1:6*nc_out, :]
+        X[1:nx_in, ny_in+1:end, nz_in+1:end, 1:nc_out, :] = Y[:, :, :,
+                                                              6*nc_out+1:7*nc_out, :]
+        X[nx_in+1:end, ny_in+1:end, nz_in+1:end, 1:nc_out, :] = Y[:, :, :,
+                                                                  7*nc_out+1:8*nc_out, :]
+
+    elseif pattern == "checkerboard"
+        X[1:2:nx_out, 1:2:ny_out, 1:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               1:nc_out, :]
+        X[2:2:nx_out, 1:2:ny_out, 1:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               nc_out+1:2*nc_out, :]
+        X[1:2:nx_out, 2:2:ny_out, 1:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               2*nc_out+1:3*nc_out, :]
+        X[2:2:nx_out, 2:2:ny_out, 1:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               3*nc_out+1:4*nc_out, :]
+        X[1:2:nx_out, 1:2:ny_out, 2:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               4*nc_out+1:5*nc_out, :]
+        X[2:2:nx_out, 1:2:ny_out, 2:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               5*nc_out+1:6*nc_out, :]
+        X[1:2:nx_out, 2:2:ny_out, 2:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               6*nc_out+1:7*nc_out, :]
+        X[2:2:nx_out, 2:2:ny_out, 2:2:nz_out, 1:nc_out, :] = Y[:, :, :,
+                                                               7*nc_out+1:8*nc_out, :]
+    else
+        throw("Specified pattern not defined.")
+    end
+    return X
+end
+
+function unsqueeze(X::AbstractArray{T,5}, Y::AbstractArray{T,5}; pattern="column") where T
+    return unsqueeze(X; pattern=pattern), unsqueeze(Y; pattern=pattern)
+end
+
 
 ####################################################################################################
 # Squeeze and unsqueeze using the wavelet transform
@@ -132,17 +249,17 @@ end
  Perform a 1-level channelwise 2D wavelet transform of X and squeeze output of each
  transform into 4 channels (per 1 input channel).
 
- *Input*: 
- 
+ *Input*:
+
  - `X`: 4D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize`
 
- - `type`: Wavelet filter type. Possible values are `WT.haar` for Haar wavelets, 
-    `WT.coif2`, `WT.coif4`, etc. for Coiflet wavelets, or `WT.db1`, `WT.db2`, etc. 
-    for Daubechies wavetlets. See *https://github.com/JuliaDSP/Wavelets.jl* for a 
+ - `type`: Wavelet filter type. Possible values are `WT.haar` for Haar wavelets,
+    `WT.coif2`, `WT.coif4`, etc. for Coiflet wavelets, or `WT.db1`, `WT.db2`, etc.
+    for Daubechies wavetlets. See *https://github.com/JuliaDSP/Wavelets.jl* for a
     full list.
 
  *Output*:
- 
+
  - `Y`: Reshaped tensor of dimensions `nx/2` x `ny/2` x `n_channel*4` x `batchsize`
 
  See also: [`wavelet_unsqueeze`](@ref), [`squeeze`](@ref), [`unsqueeze`](@ref)
@@ -170,8 +287,8 @@ end
  This reduces the number of channels by 4 and increases each spatial
  dimension by a factor of 2. Inverse operation of `wavelet_squeeze`.
 
- *Input*: 
- 
+ *Input*:
+
  - `Y`: 4D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize`
 
  - `type`: Wavelet filter type. Possible values are `haar` for Haar wavelets,
@@ -179,7 +296,7 @@ end
   wavetlets. See *https://github.com/JuliaDSP/Wavelets.jl* for a full list.
 
  *Output*:
- 
+
  - `X`: Reshaped tensor of dimenions `nx*2` x `ny*2` x `n_channel/4` x `batchsize`
 
  See also: [`wavelet_squeeze`](@ref), [`squeeze`](@ref), [`unsqueeze`](@ref)
@@ -210,12 +327,12 @@ end
  Split 4D input tensor in half along the channel dimension. Inverse operation
  of `tensor_cat`.
 
- *Input*: 
- 
+ *Input*:
+
  - `X`: 4D input tensor of dimensions `nx` x `ny` x `n_channel` x `batchsize`
 
  *Output*:
- 
+
  - `Y`, `Z`: 4D output tensors, each of dimensions `nx` x `ny` x `n_channel/2` x `batchsize`
 
  See also: [`tensor_cat`](@ref)
@@ -253,17 +370,17 @@ end
  Concatenate 4D input tensors along the channel dimension. Inverse operation
  of `tensor_split`.
 
- *Input*: 
- 
+ *Input*:
+
  - `Y`, `Z`: 4D input tensors, each of dimensions `nx` x `ny` x `n_channel` x `batchsize`
 
  *Output*:
- 
+
  - `X`: 4D output tensor of dimensions `nx` x `ny` x `n_channel*2` x `batchsize`
 
  See also: [`tensor_split`](@ref)
 """
-function tensor_cat(X::AbstractArray{T,4}, Y::AbstractArray{T,4}) where T 
+function tensor_cat(X::AbstractArray{T,4}, Y::AbstractArray{T,4}) where T
     if size(X, 3) == 0
         return Y
     elseif size(Y, 3) == 0

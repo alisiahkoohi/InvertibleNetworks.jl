@@ -13,7 +13,8 @@ if test_suite == "all" || test_suite == "layers"
         include("test_utils/test_objectives.jl")
         include("test_utils/test_nnlib_convolution.jl")
         include("test_utils/test_activations.jl")
-        include("test_utils/test_squeeze.jl")
+        include("test_utils/test_squeeze_2D.jl")
+        include("test_utils/test_squeeze_3D.jl")
 
         # Layers
         include("test_layers/test_residual_block.jl")

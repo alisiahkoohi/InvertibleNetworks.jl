@@ -1,4 +1,3 @@
-
 using InvertibleNetworks, Test, LinearAlgebra, Random
 
 Random.seed!(11)
@@ -6,9 +5,12 @@ Random.seed!(11)
 X = randn(Float32, 28, 28, 2, 4)
 
 # Squeeze and unsqueeze
-@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="column"); pattern="column")), 0f0; atol=1f-6)
-@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="patch"); pattern="patch")), 0f0; atol=1f-6)
-@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="checkerboard"); pattern="checkerboard")), 0f0; atol=1f-6)
+@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="column"); pattern="column")),
+               0f0; atol=1f-6)
+@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="patch"); pattern="patch")),
+               0f0; atol=1f-6)
+@test isapprox(norm(X - unsqueeze(squeeze(X; pattern="checkerboard");
+               pattern="checkerboard")), 0f0; atol=1f-6)
 
 # Wavelet transform invertibility
 Y = wavelet_squeeze(X)
