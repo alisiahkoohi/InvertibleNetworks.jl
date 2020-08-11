@@ -4,7 +4,6 @@
 
 export log_likelihood, ∇log_likelihood, mse, ∇mse
 
-###################################################################################################
 # Mean squared error
 """
     f = mse(X, Y)
@@ -13,7 +12,7 @@ Mean squared error between arrays/tensor X and Y
 
 See also: [`∇mse`](@ref)
 """
-mse(X, Y) = .5f0/size(X, 4)*norm(X - Y, 2)^2
+mse(X, Y) = .5f0/size(X)[end]*norm(X - Y, 2)^2
 
 
 """
@@ -23,7 +22,7 @@ Gradient of the MSE loss with respect to input tensors X and Y.
 
 See also: [`mse`](@ref)
 """
-∇mse(X, Y) = 1f0/size(X, 4)*(X - Y)
+∇mse(X, Y) = 1f0/size(X)[end]*(X - Y)
 
 
 ###################################################################################################
@@ -36,7 +35,7 @@ Log-likelihood of X for a Gaussian distribution with given mean μ and variance 
 
 See also: [`∇log_likelihood`](@ref)
 """
-log_likelihood(X; μ=0f0, σ=1f0) = 1f0/size(X, 4)*sum(-.5f0*((X .- μ)/σ).^2)
+log_likelihood(X; μ=0f0, σ=1f0) = 1f0/size(X)[end]*sum(-.5f0*((X .- μ)/σ).^2)
 
 
 """
@@ -46,5 +45,5 @@ Gradient of the log-likelihood function with respect to the input tensor X.
 
 See also: [`log_likelihood`](@ref)
 """
-∇log_likelihood(X; μ=0f0, σ=1f0) = -1f0/size(X, 4)*(X .- μ)/σ^2
+∇log_likelihood(X; μ=0f0, σ=1f0) = -1f0/size(X)[end]*(X .- μ)/σ^2
 
