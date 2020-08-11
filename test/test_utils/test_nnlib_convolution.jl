@@ -4,9 +4,7 @@
 
 using NNlib, Test, LinearAlgebra
 
-###################################################################################################
 # Adjoint test 2D
-
 d = 4
 n_in = 10
 n_out = 20
@@ -26,9 +24,8 @@ b = vec(X)'*vec(X_)
 
 @test isapprox(a/b - 1f0, 0f0, atol=1f-4)
 
-###################################################################################################
-# Adjoint test 3D
 
+# Adjoint test 3D
 d = 4
 n_in = 10
 n_out = 20
@@ -48,9 +45,8 @@ b = vec(X)'*vec(X_)
 
 @test isapprox(a/b - 1f0, 0f0, atol=1f-4)
 
-###################################################################################################
-# Gradient test 2D
 
+# Gradient test 2D
 # Input
 X = glorot_uniform(64, 64, n_in, 1)
 W = glorot_uniform(d, d, n_in, n_out)
@@ -90,7 +86,7 @@ for j=1:maxiter
     err2[j] = abs(f - f0 - h*dot(dW, gW))
     print(err1[j], "; ", err2[j], "\n")
     global h = h/2f0
-end   
+end
 
 @test isapprox(err1[end] / (err1[1]/2^(maxiter-1)), 1f0; atol=1f1)
 @test isapprox(err2[end] / (err2[1]/4^(maxiter-1)), 1f0; atol=1f1)
@@ -110,14 +106,13 @@ for j=1:maxiter
     err4[j] = abs(f - f0 - h*dot(db, gb))
     print(err3[j], "; ", err4[j], "\n")
     global h = h/2f0
-end   
+end
 
 @test isapprox(err3[end] / (err3[1]/2^(maxiter-1)), 1f0; atol=1f1)
 @test isapprox(err4[end] / (err4[1]/4^(maxiter-1)), 1f0; atol=1f1)
 
-###################################################################################################
-# Gradient test 3D
 
+# Gradient test 3D
 # Input
 X = glorot_uniform(64, 64, 64, n_in, 1)
 W = glorot_uniform(d, d, d, n_in, n_out)
@@ -157,7 +152,7 @@ for j=1:maxiter
     err2[j] = abs(f - f0 - h*dot(dW, gW))
     print(err1[j], "; ", err2[j], "\n")
     global h = h/2f0
-end   
+end
 
 @test isapprox(err1[end] / (err1[1]/2^(maxiter-1)), 1f0; atol=1f1)
 @test isapprox(err2[end] / (err2[1]/4^(maxiter-1)), 1f0; atol=1f1)
@@ -177,7 +172,7 @@ for j=1:maxiter
     err4[j] = abs(f - f0 - h*dot(db, gb))
     print(err3[j], "; ", err4[j], "\n")
     global h = h/2f0
-end   
+end
 
 @test isapprox(err3[end] / (err3[1]/2^(maxiter-1)), 1f0; atol=1f1)
 @test isapprox(err4[end] / (err4[1]/4^(maxiter-1)), 1f0; atol=1f1)
