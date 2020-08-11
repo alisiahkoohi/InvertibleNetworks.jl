@@ -9,12 +9,12 @@ export FluxBlock
 
  Create a (non-invertible) neural network block from a Flux network.
 
- *Input*: 
+ *Input*:
 
  - `model`: Flux neural network of type `Chain`
 
  *Output*:
- 
+
  - `FB`: residual block layer
 
  *Usage:*
@@ -36,7 +36,6 @@ end
 
 @Flux.functor FluxBlock
 
-#######################################################################################################################
 # Constructor
 
 function FluxBlock(model::Chain)
@@ -54,16 +53,18 @@ function FluxBlock(model::Chain)
 end
 
 
-#######################################################################################################################
 # Functions
 
-# Forward 
+# Forward 2D
 forward(X::AbstractArray{Float32, 4}, FB::FluxBlock) = FB.model(X)
 
+# Forward 3D
+forward(X::AbstractArray{Float32, 5}, FB::FluxBlock) = FB.model(X)
 
 # Backward 2D
-function backward(ΔY::AbstractArray{Float32, 4}, X::AbstractArray{Float32, 4}, FB::FluxBlock)
-    
+function backward(ΔY::AbstractArray{Float32, 4}, X::AbstractArray{Float32, 4},
+                  FB::FluxBlock)
+
     # Backprop using Zygote
     θ = Flux.params(X, FB.model)
     back = Zygote.pullback(() -> FB.model(X), θ)[2]
@@ -77,6 +78,22 @@ function backward(ΔY::AbstractArray{Float32, 4}, X::AbstractArray{Float32, 4}, 
     return ΔX
 end
 
+# Backward 3D
+function backward(ΔY::AbstractArray{Float32, 5}, X::AbstractArray{Float32, 5},
+                  FB::FluxBlock)
+
+    # Backprop using Zygote
+    θ = Flux.params(X, FB.model)
+    back = Zygote.pullback(() -> FB.model(X), θ)[2]
+    grad = back(ΔY)
+
+    # Set gradients
+    ΔX = grad[θ[1]]
+    for j=1:length(FB.params)
+        FB.params[j].grad = grad[θ[j+1]]
+    end
+    return ΔX
+end
 
 # Clear gradients
 function clear_grad!(FB::FluxBlock)
