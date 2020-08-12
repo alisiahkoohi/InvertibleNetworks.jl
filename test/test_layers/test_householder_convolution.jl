@@ -26,8 +26,8 @@ v30 = randn(Float32, k)
 dv3 = v3 - v30
 
 # Input
-X = randn(Float32, nx, ny, nz, k, batchsize)
-X0 = randn(Float32, nx, ny, nz, k, batchsize)
+X = randn(Float32, nx, ny, k, batchsize)
+X0 = randn(Float32, nx, ny, k, batchsize)
 dX = X - X0
 
 # Operators
@@ -47,7 +47,7 @@ err2 = norm(X - X_)/norm(X)
 @test isapprox(err2, 0f0; atol=1f-6)
 
 Y = C.forward(X)
-ΔY = randn(Float32, nx, ny, nz, k, batchsize)
+ΔY = randn(Float32, nx, ny, k, batchsize)
 ΔX_, X_ = C.inverse((ΔY, Y))
 err3 = norm(X - X_)/norm(X)
 
