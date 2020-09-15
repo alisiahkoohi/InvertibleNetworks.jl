@@ -10,7 +10,7 @@ using LinearAlgebra, Random, NNlib, Flux, Statistics, Wavelets, Zygote
 # For function signatur definition
 import CUDA: CuArray
 
-export clear_grad!, glorot_uniform, get_params
+export clear_grad!, glorot_uniform, get_params, put_params!
 
 
 # Getters for DenseConvDims fields

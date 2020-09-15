@@ -293,3 +293,17 @@ end
  the paramters in `P`, modifies the parameters in `NL`.
 """
 get_params(RB::ResidualBlock) = [RB.W1, RB.W2, RB.W3, RB.b1, RB.b2]
+
+
+"""
+    P = put_params!(NL::NeuralNetLayer, Params::Array{Parameter,1})
+
+ Inputs a initialized ResidualBlock and desired parameters values to load.
+"""
+function put_params!(RB::ResidualBlock, Params::Array{Any,1})
+    RB.W1.data = Params[1].data
+    RB.W2.data = Params[2].data
+    RB.W3.data = Params[3].data
+    RB.b1.data = Params[4].data
+    RB.b2.data = Params[5].data
+end

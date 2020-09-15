@@ -204,6 +204,9 @@ clear_grad!(L::CouplingLayerBasic) = clear_grad!(L.RB)
 # Get parameters
 get_params(L::CouplingLayerBasic) = get_params(L.RB)
 
+# Put parameters
+put_params!(L::CouplingLayerBasic, Params::Array{Any,1}) = put_params!(L.RB, Params)
+
 # Set is_reversed flag
 function tag_as_reversed!(L::CouplingLayerBasic, tag::Bool)
     L.is_reversed = tag
