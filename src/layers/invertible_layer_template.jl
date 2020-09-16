@@ -113,6 +113,12 @@ end
 # the parameters. In this case, our parameters are S and B
 get_params(AL::AffineLayer) = [AL.S, AL.B]
 
+# Put parameters
+function put_params!(AL::AffineLayer, Params::Array{Any,1})
+    AL.S.data = Params[1].data
+    AL.B.data = Params[2].data
+end
+
 # Function for the logdet and for computing the gradient of the logdet.
 # For our affine layer consisting of an element-wise multiplication of S
 # and X, the Jacobian is given by S, and the logdet is the sum of the logarithm

@@ -206,9 +206,12 @@ end
 # Get parameters
 get_params(AN::ActNorm) = [AN.s, AN.b]
 
-function tag_as_reversed!(AN::ActNorm, tag::Bool)
-    AN.is_reversed = tag
-    return AN
+# Put parameters
+function put_params!(AN::ActNorm, Params::Array{Any,1})
+    for j=1:length(AN)
+        AN[j].s.data = Params[j].data
+        AN[j].b.data = Params[2*j].data
+    end
 end
 
 # 2D Logdet

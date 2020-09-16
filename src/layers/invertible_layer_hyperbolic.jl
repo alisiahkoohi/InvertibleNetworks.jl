@@ -221,5 +221,11 @@ function clear_grad!(HL::HyperbolicLayer)
     HL.b.grad = nothing
 end
 
+# Put parameters
+function put_params!(HL::HyperbolicLayer, Params::Array{Any,1})
+    HL.W.data = Params[1].data
+    HL.b.data = Params[2].data
+end
+
 # Get parameters
 get_params(HL::HyperbolicLayer) = [HL.W, HL.b]

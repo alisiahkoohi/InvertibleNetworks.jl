@@ -251,3 +251,10 @@ end
 
 # Get parameters
 get_params(C::Conv1x1) = [C.v1, C.v2, C.v3]
+
+# Put parameters
+function put_params!(C::Conv1x1, Params::Array{Any,1})
+    C.v1.data = Params[1].data
+    C.v2.data = Params[2].data
+    C.v3.data = Params[3].data
+end

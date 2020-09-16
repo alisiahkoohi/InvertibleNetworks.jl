@@ -88,6 +88,12 @@ end
 # Get parameters
 get_params(AL::AffineLayer) = [AL.s, AL.b]
 
+# Put parameters
+function put_params!(AL::AffineLayer, Params::Array{Any,1})
+    AL.s.data = Params[1].data
+    AL.b.data = Params[2].data
+end
+
 # Logdet
 logdet_forward(s) = sum(log.(abs.(s.data)))
 logdet_backward(s) = 1f0 ./ s.data
