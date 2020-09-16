@@ -4,8 +4,10 @@ on: push
 
 jobs:
   test:
-    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    name: Julia-${{ matrix.version }} - ${{ matrix.group }} - ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+        GROUP: ${{ matrix.group }}
 
     strategy:
       fail-fast: false
@@ -13,6 +15,7 @@ jobs:
       matrix:
         version: ['1.3', '1.4', '1.5']
         os: [ubuntu-latest]
+        group: ["utils", "layers", "networks"]
 
     steps:
       - name: Checkout InvertibleNetworks.jl
