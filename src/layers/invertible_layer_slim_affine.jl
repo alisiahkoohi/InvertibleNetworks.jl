@@ -170,6 +170,12 @@ function get_params(CS::AffineCouplingLayerSLIM)
     return p
 end
 
+# Put parameters
+function put_params!(CS::AffineCouplingLayerSLIM, Params::Array{Any,1})
+    put_params!(CS.RB, Params[1:5])
+    ~isnothing(CS.C) && put_params!(CS.C, Params[6:end])
+end
+
 # Logdet
 slim_logdet_forward(S) = sum(log.(abs.(S))) / size(S, 4)
 slim_logdet_backward(S) = 1f0./ S / size(S, 4)

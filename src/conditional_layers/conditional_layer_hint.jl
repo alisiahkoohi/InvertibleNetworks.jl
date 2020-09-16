@@ -209,6 +209,31 @@ function get_params(CH::ConditionalLayerHINT)
     return p
 end
 
+# Put parameters
+function put_params!(CH::ConditionalLayerHINT, Params::Array{Any,1})
+    idx_s = 1
+    counter = 0
+
+    nlayers_x = length(CH.CL_X.CL)
+    isnothing(CH.CL_X.C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+    put_params!(CH.CL_X, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 0
+    nlayers_y = length(CH.CL_Y.CL)
+    isnothing(CH.CL_Y.C) ? counter += 5*nlayers_y : counter += 5*nlayers_y + 3
+    put_params!(CH.CL_Y, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 5
+    put_params!(CH.CL_YX, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 3
+    ~isnothing(CH.C_X) && put_params!(CH.C_X, Params[idx_s:idx_s+counter-1]); idx_s += counter
+    ~isnothing(CH.C_Y) && put_params!(CH.C_Y, Params[idx_s:idx_s+counter-1]); idx_s += counter
+end
+
 # Set is_reversed flag in full network tree
 function tag_as_reversed!(H::ConditionalLayerHINT, tag::Bool)
     H.is_reversed = tag

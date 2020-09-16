@@ -220,7 +220,7 @@ function inverse(Y, H::CouplingLayerHINT; scale=1, permute=nothing, logdet=nothi
         X = H.C.inverse(X)
     end
 
-    if scale == 1 
+    if scale == 1
         logdet ? (return X, logdet_full) : (return X)
     else
         return X, logdet_full
@@ -315,6 +315,18 @@ function get_params(H::CouplingLayerHINT)
     end
     ~isnothing(H.C) && (p = cat(p, get_params(H.C); dims=1))
     return p
+end
+
+# Put parameters
+function put_params!(H::CouplingLayerHINT, Params::Array{Any,1})
+    nlayers = length(H.CL)
+    put_params!(H.CL[1], Params[1:5])
+    if nlayers > 1
+        for j=2:nlayers
+            put_params!(H.CL[j], Params[5*(j-1)+1:5*j])
+        end
+    end
+    ~isnothing(H.C) && put_params!(H.C, Params[5*nlayers+1:end])
 end
 
 # Set is_reversed flag in full network tree

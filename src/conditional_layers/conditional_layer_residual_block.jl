@@ -168,3 +168,14 @@ end
  the paramters in `P`, modifies the parameters in `NL`.
 """
 get_params(RB::ConditionalResidualBlock) = [RB.W0, RB.W1, RB.W2, RB.W3, RB.b0, RB.b1, RB.b2]
+
+# Put paramers
+function put_params!(RB::ConditionalResidualBlock, Params::Array{Any,1})
+    RB.W0.data = Params[1].data
+    RB.W1.data = Params[2].data
+    RB.W2.data = Params[3].data
+    RB.W3.data = Params[4].data
+    RB.b0.data = Params[5].data
+    RB.b1.data = Params[6].data
+    RB.b2.data = Params[7].data
+end

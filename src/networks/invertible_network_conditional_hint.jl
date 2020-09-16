@@ -167,6 +167,35 @@ function get_params(CH::NetworkConditionalHINT)
     return p
 end
 
+# Put parameters
+function put_params!(CH::NetworkConditionalHINT, Params::Array{Any,1})
+    depth = length(CH.CL)
+    idx_s = 1
+    counter = 0
+
+    for j = 1:depth
+        idx_s += counter
+        counter = 2
+        put_params!(CH.AN_X[j], Params[idx_s:idx_s+counter-1])
+
+        idx_s += counter
+        counter = 2
+        put_params!(CH.AN_Y[j], Params[idx_s:idx_s+counter-1])
+
+        idx_s += counter
+        counter = 0
+        nlayers_x = length(CH.CL[j].CL_X.CL)
+        isnothing(CH.CL[j].CL_X.C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+        nlayers_y = length(CH.CL[j].CL_Y.CL)
+        isnothing(CH.CL[j].CL_Y.C) ? counter += 5*nlayers_y : counter += 5*nlayers_y + 3
+        counter += 5
+        ~isnothing(CH.CL[j].C_X) && (counter += 3)
+        ~isnothing(CH.CL[j].C_Y) && (counter += 3)
+
+        put_params!(CH.CL[j], Params[idx_s:idx_s+counter-1])
+    end
+end
+
 # Set is_reversed flag in full network tree
 function tag_as_reversed!(CH::NetworkConditionalHINT, tag::Bool)
     depth = length(CH.CL)

@@ -9,12 +9,12 @@ export FluxBlock
 
  Create a (non-invertible) neural network block from a Flux network.
 
- *Input*: 
+ *Input*:
 
  - `model`: Flux neural network of type `Chain`
 
  *Output*:
- 
+
  - `FB`: residual block layer
 
  *Usage:*
@@ -57,13 +57,13 @@ end
 #######################################################################################################################
 # Functions
 
-# Forward 
+# Forward
 forward(X::AbstractArray{Float32, 4}, FB::FluxBlock) = FB.model(X)
 
 
 # Backward 2D
 function backward(ΔY::AbstractArray{Float32, 4}, X::AbstractArray{Float32, 4}, FB::FluxBlock)
-    
+
     # Backprop using Zygote
     θ = Flux.params(X, FB.model)
     back = Zygote.pullback(() -> FB.model(X), θ)[2]
@@ -99,4 +99,9 @@ function get_params(FB::FluxBlock)
         params = [params; FB.params[j]]
     end
     return params
+end
+
+# Put parameters
+function put_params!(FB::FluxBlock, Params::Array{Any,1})
+    Flux.loadparams!(FB, Params)
 end

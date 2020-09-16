@@ -14,21 +14,21 @@ or
     IL = CouplingLayerIRIM(nx, ny, nz, n_in, n_hidden, batchsize; k1=4, k2=3, p1=0, p2=1, s1=4, s2=1, logdet=false) (3D)
 
 
- Create an i-RIM invertible coupling layer based on 1x1 convolutions and a residual block. 
+ Create an i-RIM invertible coupling layer based on 1x1 convolutions and a residual block.
 
- *Input*: 
- 
+ *Input*:
+
  - `C::Conv1x1`: 1x1 convolution layer
- 
+
  - `RB::ResidualBlock`: residual block layer consisting of 3 convolutional layers with ReLU activations.
 
  or
 
  - `nx`, `ny`, `nz`: spatial dimensions of input
- 
+
  - `n_in`, `n_hidden`: number of input and hidden channels
 
- - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third 
+ - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third
     operator, `k2` is the kernel size of the second operator.
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`)
@@ -36,7 +36,7 @@ or
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`)
 
  *Output*:
- 
+
  - `IL`: Invertible i-RIM coupling layer.
 
  *Usage:*
@@ -63,7 +63,7 @@ end
 @Flux.functor CouplingLayerIRIM
 
 # 2D Constructor from input dimensions
-function CouplingLayerIRIM(nx::Int64, ny::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64; 
+function CouplingLayerIRIM(nx::Int64, ny::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64;
     k1=4, k2=3, p1=0, p2=1, s1=4, s2=1)
 
     # 1x1 Convolution and residual block for invertible layer
@@ -74,7 +74,7 @@ function CouplingLayerIRIM(nx::Int64, ny::Int64, n_in::Int64, n_hidden::Int64, b
 end
 
 # 3D Constructor from input dimensions
-function CouplingLayerIRIM(nx::Int64, ny::Int64, nz::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64; 
+function CouplingLayerIRIM(nx::Int64, ny::Int64, nz::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64;
     k1=4, k2=3, p1=0, p2=1, s1=4, s2=1)
 
     # 1x1 Convolution and residual block for invertible layer
@@ -89,17 +89,17 @@ function forward(X::AbstractArray{Float32, 4}, L::CouplingLayerIRIM)
 
     # Get dimensions
     k = Int(L.C.k/2)
-    
+
     X_ = L.C.forward(X)
     X1_ = X_[:, :, 1:k, :]
     X2_ = X_[:, :, k+1:end, :]
 
     Y1_ = X1_
     Y2_ = X2_ + L.RB.forward(Y1_)
-    
+
     Y_ = cat(Y1_, Y2_, dims=3)
     Y = L.C.inverse(Y_)
-    
+
     return Y
 end
 
@@ -108,17 +108,17 @@ function forward(X::AbstractArray{Float32, 5}, L::CouplingLayerIRIM)
 
     # Get dimensions
     k = Int(L.C.k/2)
-    
+
     X_ = L.C.forward(X)
     X1_ = X_[:, :, :, 1:k, :]
     X2_ = X_[:, :, :, k+1:end, :]
 
     Y1_ = X1_
     Y2_ = X2_ + L.RB.forward(Y1_)
-    
+
     Y_ = cat(Y1_, Y2_, dims=4)
     Y = L.C.inverse(Y_)
-    
+
     return Y
 end
 
@@ -131,13 +131,13 @@ function inverse(Y::AbstractArray{Float32, 4}, L::CouplingLayerIRIM; save=false)
     Y_ = L.C.forward(Y)
     Y1_ = Y_[:, :, 1:k, :]
     Y2_ = Y_[:, :, k+1:end, :]
-    
+
     X1_ = Y1_
     X2_ = Y2_ - L.RB.forward(Y1_)
-    
+
     X_ = cat(X1_, X2_, dims=3)
     X = L.C.inverse(X_)
-    
+
     if save == false
         return X
     else
@@ -154,13 +154,13 @@ function inverse(Y::AbstractArray{Float32, 5}, L::CouplingLayerIRIM; save=false)
     Y_ = L.C.forward(Y)
     Y1_ = Y_[:, :, :, 1:k, :]
     Y2_ = Y_[:, :, :, k+1:end, :]
-    
+
     X1_ = Y1_
     X2_ = Y2_ - L.RB.forward(Y1_)
-    
+
     X_ = cat(X1_, X2_, dims=4)
     X = L.C.inverse(X_)
-    
+
     if save == false
         return X
     else
@@ -180,10 +180,10 @@ function backward(ΔY::AbstractArray{Float32, 4}, Y::AbstractArray{Float32, 4}, 
     ΔY_ = L.C.forward((ΔY, Y))[1]
     ΔY2_ = ΔY_[:, :, k+1:end, :]
     ΔY1_ = L.RB.backward(ΔY2_, Y1_) + ΔY_[:, :, 1:k, :]
-    
+
     ΔX_ = cat(ΔY1_, ΔY2_, dims=3)
     ΔX = L.C.inverse((ΔX_, X_))[1]
-    
+
     return ΔX, X
 end
 
@@ -198,10 +198,10 @@ function backward(ΔY::AbstractArray{Float32, 5}, Y::AbstractArray{Float32, 5}, 
     ΔY_ = L.C.forward((ΔY, Y))[1]
     ΔY2_ = ΔY_[:, :, :, k+1:end, :]
     ΔY1_ = L.RB.backward(ΔY2_, Y1_) + ΔY_[:, :, :, 1:k, :]
-    
+
     ΔX_ = cat(ΔY1_, ΔY2_, dims=4)
     ΔX = L.C.inverse((ΔX_, X_))[1]
-    
+
     return ΔX, X
 end
 
@@ -216,4 +216,10 @@ function get_params(L::CouplingLayerIRIM)
     p1 = get_params(L.C)
     p2 = get_params(L.RB)
     return cat(p1, p2; dims=1)
+end
+
+# Put parameters
+function put_params!(L::CouplingLayerIRIM, Params::Array{Any,1})
+    put_params!(L.C, Params[1:3])
+    put_params!(L.RB, Params[4:end])
 end

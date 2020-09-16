@@ -11,10 +11,10 @@ export AdditiveCouplingLayerSLIM
 
  Create an invertible additive SLIM coupling layer.
 
- *Input*: 
+ *Input*:
 
  - `nx, ny`: spatial dimensions of input
- 
+
  - `n_in`, `n_hidden`: number of input and hidden channels
 
  - `Ψ`: link function
@@ -23,7 +23,7 @@ export AdditiveCouplingLayerSLIM
 
  - `permute`: bool to indicate whether to apply a channel permutation (default is `false`)
 
- - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third 
+ - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third
     operator, `k2` is the kernel size of the second operator
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`)
@@ -31,7 +31,7 @@ export AdditiveCouplingLayerSLIM
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`)
 
  *Output*:
- 
+
  - `CS`: Invertible SLIM coupling layer
 
  *Usage:*
@@ -63,7 +63,7 @@ end
 @Flux.functor AdditiveCouplingLayerSLIM
 
 # Constructor from input dimensions
-function AdditiveCouplingLayerSLIM(nx::Int64, ny::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64, Ψ::Function; 
+function AdditiveCouplingLayerSLIM(nx::Int64, ny::Int64, n_in::Int64, n_hidden::Int64, batchsize::Int64, Ψ::Function;
     k1=3, k2=3, p1=1, p2=1, s1=1, s2=1, logdet::Bool=false, permute::Bool=false)
 
     # 1x1 Convolution and residual block for invertible layer
@@ -105,7 +105,7 @@ function inverse(Y::AbstractArray{Float32, 4}, D, J, CS::AdditiveCouplingLayerSL
     # Get dimensions
     nx, ny, n_s, batchsize = size(Y)
     isnothing(CS.C) ?  (Y_ = copy(Y)) : (Y_ = CS.C.forward(Y))
- 
+
     # Coupling layer
     Y1_, Y2_ = tensor_split(Y_)
     X1_ = copy(Y1_)
@@ -142,7 +142,7 @@ function backward(ΔY::AbstractArray{Float32, 4}, Y::AbstractArray{Float32, 4}, 
     ΔX1_= tensor_cat(reshape(J'*Jg, nx1, nx2, 1, batchsize), Δgs[:,:,2:end,:])
     ΔD = -Jg
     ΔX1_ += ΔY1_
-    
+
     ΔX_ = tensor_cat(ΔX1_, ΔX2_)
     isnothing(CS.   C) ? (ΔX = copy(ΔX_)) : (ΔX = CS.C.inverse((ΔX_, X_))[1])
 
@@ -163,4 +163,10 @@ function get_params(CS::AdditiveCouplingLayerSLIM)
     p = get_params(CS.RB)
     ~isnothing(CS.C) && (p = cat(p, get_params(CS.C); dims=1))
     return p
+end
+
+# Put parameters
+function put_params!(CS::AdditiveCouplingLayerSLIM, Params::Array{Any,1})
+    put_params!(CS.RB, Params[1:5])
+    ~isnothing(CS.C) && put_params!(CS.C, Params[6:end])
 end

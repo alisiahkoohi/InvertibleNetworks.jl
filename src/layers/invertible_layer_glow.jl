@@ -153,6 +153,12 @@ function get_params(L::CouplingLayerGlow)
     return cat(p1, p2; dims=1)
 end
 
+# Put parameters
+function put_params!(L::CouplingLayerGlow, Params::Array{Any,1})
+    put_params!(L.C, Params[1:3])
+    put_params!(L.RB, Params[4:end])
+end
+
 # Logdet (correct?)
 glow_logdet_forward(S) = sum(log.(abs.(S))) / size(S, 4)
 glow_logdet_backward(S) = 1f0./ S / size(S, 4)

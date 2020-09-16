@@ -8,22 +8,22 @@ export NetworkGlow
 """
     G = NetworkGlow(nx, ny, n_in, batchsize, n_hidden, L, K; k1=3, k2=1, p1=1, p2=0, s1=1, s2=1)
 
- Create an invertible network based on the Glow architecture. Each flow step in the inner loop 
+ Create an invertible network based on the Glow architecture. Each flow step in the inner loop
  consists of an activation normalization layer, followed by an invertible coupling layer with
- 1x1 convolutions and a residual block. The outer loop performs a squeezing operation prior 
+ 1x1 convolutions and a residual block. The outer loop performs a squeezing operation prior
  to the inner loop, and a splitting operation afterwards.
 
- *Input*: 
- 
+ *Input*:
+
  - `nx`, `ny`, `n_in`, `batchsize`: spatial dimensions, number of channels and batchsize of input tensor
- 
+
  - `n_hidden`: number of hidden units in residual blocks
 
  - `L`: number of scales (outer loop)
 
  - `K`: number of flow steps per scale (inner loop)
 
- - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third 
+ - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third
  operator, `k2` is the kernel size of the second operator.
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`)
@@ -31,7 +31,7 @@ export NetworkGlow
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`)
 
  *Output*:
- 
+
  - `G`: invertible Glow network.
 
  *Usage:*
@@ -178,4 +178,23 @@ function get_params(G::NetworkGlow)
         end
     end
     return p
+end
+
+# Put parameters
+function put_params!(G::NetworkGlow, Params::Array{Any,1})
+    L, K = size(G.AN)
+    idx_s = 1
+    counter = 0
+
+    for i=1:L
+        for j=1:K
+            idx_s += counter
+            counter = 2
+            put_params!(G.AN[i, j], Params[idx_s:idx_s+counter-1])
+
+            idx_s += counter
+            counter = 8
+            put_params!(G.CL[i, j], Params[idx_s:idx_s+counter-1])
+        end
+    end
 end

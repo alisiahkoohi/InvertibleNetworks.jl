@@ -10,10 +10,10 @@ export NetworkMultiScaleConditionalHINT
  Create a conditional HINT network for data-driven generative modeling based
  on the change of variables formula.
 
- *Input*: 
- 
+ *Input*:
+
  - `nx`, `ny`, `n_in`, `batchsize`: spatial dimensions, number of channels and batchsize of input tensors `X` and `Y`
- 
+
  - `n_hidden`: number of hidden units in residual blocks
 
  - `L`: number of scales (outer loop)
@@ -26,11 +26,11 @@ export NetworkMultiScaleConditionalHINT
  - `k1`, `k2`: kernel size for first and third residual layer (`k1`) and second layer (`k2`)
 
  - `p1`, `p2`: respective padding sizes for residual block layers
- 
+
  - `s1`, `s2`: respective strides for residual block layers
 
  *Output*:
- 
+
  - `CH`: conditional HINT network
 
  *Usage:*
@@ -45,7 +45,7 @@ export NetworkMultiScaleConditionalHINT
 
  - None in `CH` itself
 
- - Trainable parameters in activation normalizations `CH.AN_X[i]` and `CH.AN_Y[i]`, 
+ - Trainable parameters in activation normalizations `CH.AN_X[i]` and `CH.AN_Y[i]`,
  and in coupling layers `CH.CL[i]`, where `i` ranges from `1` to `depth`.
 
  See also: [`ActNorm`](@ref), [`ConditionalLayerHINT!`](@ref), [`get_params`](@ref), [`clear_grad!`](@ref)
@@ -270,4 +270,33 @@ function get_params(CH::NetworkMultiScaleConditionalHINT)
         p = cat(p, get_params(CH.CL[j]); dims=1)
     end
     return p
+end
+
+# Put parameters
+function put_params!(CH::NetworkMultiScaleConditionalHINT, Params::Array{Any,1})
+    depth = length(CH.CL)
+    idx_s = 1
+    counter = 0
+
+    for j = 1:depth
+        idx_s += counter
+        counter = 2
+        put_params!(CH.AN_X[j], Params[idx_s:idx_s+counter-1])
+
+        idx_s += counter
+        counter = 2
+        put_params!(CH.AN_Y[j], Params[idx_s:idx_s+counter-1])
+
+        idx_s += counter
+        counter = 0
+        nlayers_x = length(CH.CL[j].CL_X.CL)
+        isnothing(CH.CL[j].CL_X.C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+        nlayers_y = length(CH.CL[j].CL_Y.CL)
+        isnothing(CH.CL[j].CL_Y.C) ? counter += 5*nlayers_y : counter += 5*nlayers_y + 3
+        counter += 5
+        ~isnothing(CH.CL[j].C_X) && (counter += 3)
+        ~isnothing(CH.CL[j].C_Y) && (counter += 3)
+
+        put_params!(CH.CL[j], Params[idx_s:idx_s+counter-1])
+    end
 end

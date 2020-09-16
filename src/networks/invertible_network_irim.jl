@@ -12,20 +12,20 @@ export NetworkLoop
  Create an invertibel recurrent inference machine (i-RIM) consisting of an unrooled loop
  for a given number of iterations.
 
- *Input*: 
- 
+ *Input*:
+
  - `nx`, `ny`, `nz`, `n_in`, `batchsize`: spatial dimensions, number of channels and batchsize of input tensor
- 
+
  - `n_hidden`: number of hidden units in residual blocks
 
  - `maxiter`: number unrolled loop iterations
 
  - `Ψ`: link function
 
- - `k1`, `k2`: stencil sizes for convolutions in the residual blocks. The first convolution 
-   uses a stencil of size and stride `k1`, thereby downsampling the input. The second 
+ - `k1`, `k2`: stencil sizes for convolutions in the residual blocks. The first convolution
+   uses a stencil of size and stride `k1`, thereby downsampling the input. The second
    convolutions uses a stencil of size `k2`. The last layer uses a stencil of size and stride `k1`,
-   but performs the transpose operation of the first convolution, thus upsampling the output to 
+   but performs the transpose operation of the first convolution, thus upsampling the output to
    the original input size.
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`) in
@@ -33,9 +33,9 @@ export NetworkLoop
 
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`) in
    residual block
-  
+
  *Output*:
- 
+
  - `L`: invertible i-RIM network.
 
  *Usage:*
@@ -65,7 +65,7 @@ end
 
 # 2D Constructor
 function NetworkLoop(nx, ny, n_in, n_hidden, batchsize, maxiter, Ψ; k1=4, k2=3, p1=0, p2=1, s1=4, s2=1, type="additive")
-    
+
     if type == "additive"
         L = Array{CouplingLayerIRIM}(undef, maxiter)
     elseif type == "HINT"
@@ -81,13 +81,13 @@ function NetworkLoop(nx, ny, n_in, n_hidden, batchsize, maxiter, Ψ; k1=4, k2=3,
         end
         AN[j] = ActNorm(1)
     end
-    
+
     return NetworkLoop(L, AN, Ψ)
 end
 
 # 3D Constructor
 function NetworkLoop(nx, ny, nz, n_in, n_hidden, batchsize, maxiter, Ψ; k1=4, k2=3, p1=0, p2=1, s1=4, s2=1, type="additive")
-    
+
     if type == "additive"
         L = Array{CouplingLayerIRIM}(undef, maxiter)
     elseif type == "HINT"
@@ -98,12 +98,12 @@ function NetworkLoop(nx, ny, nz, n_in, n_hidden, batchsize, maxiter, Ψ; k1=4, k
         if type == "additive"
             L[j] = CouplingLayerIRIM(nx, ny, nz, n_in, n_hidden, batchsize; k1=k1, k2=k2, p1=p1, p2=p2, s1=s1, s2=s2)
         elseif type == "HINT"
-            L[j] = CouplingLayerHINT(nx, ny, nz, n_in, n_hidden, batchsize; logdet=false, 
+            L[j] = CouplingLayerHINT(nx, ny, nz, n_in, n_hidden, batchsize; logdet=false,
                 permute="both", k1=k1, k2=k2, p1=p1, p2=p2, s1=s1, s2=s2)
         end
         AN[j] = ActNorm(1)
     end
-    
+
     return NetworkLoop(L, AN, Ψ)
 end
 
@@ -196,7 +196,7 @@ function inverse(η::AbstractArray{Float32, 5}, s::AbstractArray{Float32, 5}, d,
 end
 
 # 2D Backward loop: Input (Δη, Δs, η, s), Output (Δη, Δs, η, s)
-function backward(Δη::AbstractArray{Float32, 4}, Δs::AbstractArray{Float32, 4}, 
+function backward(Δη::AbstractArray{Float32, 4}, Δs::AbstractArray{Float32, 4},
     η::AbstractArray{Float32, 4}, s::AbstractArray{Float32, 4}, d, J, UL::NetworkLoop)
 
     # Dimensions
@@ -227,7 +227,7 @@ function backward(Δη::AbstractArray{Float32, 4}, Δs::AbstractArray{Float32, 4
 end
 
 # 3D Backward loop: Input (Δη, Δs, η, s), Output (Δη, Δs, η, s)
-function backward(Δη::AbstractArray{Float32, 5}, Δs::AbstractArray{Float32, 5}, 
+function backward(Δη::AbstractArray{Float32, 5}, Δs::AbstractArray{Float32, 5},
     η::AbstractArray{Float32, 5}, s::AbstractArray{Float32, 5}, d, J, UL::NetworkLoop)
 
     # Dimensions
@@ -278,4 +278,39 @@ function get_params(UL::NetworkLoop)
         end
     end
     return p
+end
+
+# Put parameters
+function put_params!(UL::NetworkLoop, Params::Array{Any,1})
+    maxiter = length(UL.L)
+
+    if UL.L[1] isa CouplingLayerHINT
+        idx_s = 1
+        counter = 0
+        nlayers_x = length(UL.L[1].CL)
+        isnothing(UL.L[1].C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+        put_params!(UL.L[1], Params[idx_s:idx_s+counter-1])
+
+        if maxiter > 1
+            for j=2:maxiter
+                idx_s += counter
+                counter = 0
+                nlayers_x = length(UL.L[j].CL)
+                isnothing(UL.L[j].C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+                put_params!(UL.L[j], Params[idx_s:idx_s+counter-1])
+            end
+        end
+
+    elseif UL.L[1] isa CouplingLayerIRIM
+        idx_s = 1
+        counter = 8
+        put_params!(UL.L[1], Params[idx_s:idx_s+counter-1])
+
+        if maxiter > 1
+            for j=2:maxiter
+                idx_s += counter
+                put_params!(UL.L[j], Params[idx_s:idx_s+counter-1])
+            end
+        end
+    end
 end

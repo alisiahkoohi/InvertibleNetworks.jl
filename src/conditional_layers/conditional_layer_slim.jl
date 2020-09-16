@@ -10,21 +10,21 @@ export ConditionalLayerSLIM
 
  Create a conditional SLIM layer based on the HINT architecture.
 
- *Input*: 
+ *Input*:
 
  - `nx1`, `nx2`: spatial dimensions of `X`
 
  - `nx_in`, `nx_hidden`: number of input and hidden channels of `X`
 
  - `ny1`, `ny2`: spatial dimensions of `Y`
- 
+
  - `ny_in`, `ny_hidden`: number of input and hidden channels of `Y`
 
  - `Op`: Linear forward modeling operator
 
  - `type`: string to indicate which type of data coupling layer to use (`"additive"`, `"affine"`, `"learned"`)
 
- - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third 
+ - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third
     operator, `k2` is the kernel size of the second operator.
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`)
@@ -32,7 +32,7 @@ export ConditionalLayerSLIM
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`)
 
  *Output*:
- 
+
  - `CI`: Conditional SLIM coupling layer.
 
  *Usage:*
@@ -71,9 +71,9 @@ function ConditionalLayerSLIM(nx1::Int64, nx2::Int64, nx_in::Int64, nx_hidden::I
     batchsize::Int64; type="affine", k1=3, k2=3, p1=1, p2=1, s1=1, s2=1)
 
     # Create basic coupling layers
-    CL_X = CouplingLayerHINT(nx1, nx2, nx_in, nx_hidden, batchsize; 
+    CL_X = CouplingLayerHINT(nx1, nx2, nx_in, nx_hidden, batchsize;
         k1=k1, k2=k2, p1=p1, p2=p2, s1=s1, s2=s2, logdet=true)
-    CL_Y = CouplingLayerHINT(Int(ny1/2), Int(ny2/2), Int(ny_in*4), ny_hidden, batchsize; 
+    CL_Y = CouplingLayerHINT(Int(ny1/2), Int(ny2/2), Int(ny_in*4), ny_hidden, batchsize;
         k1=k1, k2=k2, p1=p1, p2=p2, s1=s1, s2=s2, logdet=true)
 
     if type == "affine"
@@ -192,4 +192,30 @@ function get_params(CI::ConditionalLayerSLIM)
     p = cat(p, get_params(CI.C_X); dims=1)
     p = cat(p, get_params(CI.C_Y); dims=1)
     return p
+end
+
+# Put parameters
+function put_params!(CI::ConditionalLayerSLIM, Params::Array{Any,1})
+    idx_s = 1
+    counter = 0
+
+    nlayers_x = length(CI.CL_X.CL)
+    isnothing(CI.CL_X.C) ? counter += 5*nlayers_x : counter += 5*nlayers_x + 3
+    put_params!(CI.CL_X, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 0
+    nlayers_y = length(CI.CL_Y.CL)
+    isnothing(CI.CL_Y.C) ? counter += 5*nlayers_y : counter += 5*nlayers_y + 3
+    put_params!(CI.CL_Y, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 5
+    isnothing(CI.CL_XY.C) ? counter += 0 : counter += 3
+    put_params!(CI.CL_XY, Params[idx_s:idx_s+counter-1])
+
+    idx_s += counter
+    counter = 3
+    ~isnothing(CI.C_X) && put_params!(CI.C_X, Params[idx_s:idx_s+counter-1]); idx_s += counter
+    ~isnothing(CI.C_Y) && put_params!(CI.C_Y, Params[idx_s:idx_s+counter-1]); idx_s += counter
 end

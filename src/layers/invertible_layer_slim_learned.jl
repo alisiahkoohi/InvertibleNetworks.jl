@@ -7,15 +7,15 @@ export LearnedCouplingLayerSLIM
 
 
 """
-    CS = LearnedCouplingLayerSLIM(nx1, nx2, nx_in, ny1, ny2, ny_in, n_hidden, batchsize; 
+    CS = LearnedCouplingLayerSLIM(nx1, nx2, nx_in, ny1, ny2, ny_in, n_hidden, batchsize;
         logdet::Bool=false, permute::Bool=false, k1=3, k2=3, p1=1, p2=1, s1=1, s2=1)
 
  Create an invertible SLIM coupling layer with a learned data-to-image-space map.
 
- *Input*: 
+ *Input*:
 
  - `nx1`, `nx2`, `nx_in`: spatial dimensions and no. of channels of input image
- 
+
  - `ny1`, `ny2`, `ny_in`: spatial dimensions and no. of channels of input data
 
  - `n_hidden`: number of hidden units in conditional residual block
@@ -24,7 +24,7 @@ export LearnedCouplingLayerSLIM
 
  - `permute`: bool to indicate whether to apply a channel permutation (default is `false`)
 
- - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third 
+ - `k1`, `k2`: kernel size of convolutions in residual block. `k1` is the kernel of the first and third
     operator, `k2` is the kernel size of the second operator
 
  - `p1`, `p2`: padding for the first and third convolution (`p1`) and the second convolution (`p2`)
@@ -32,7 +32,7 @@ export LearnedCouplingLayerSLIM
  - `s1`, `s2`: stride for the first and third convolution (`s1`) and the second convolution (`s2`)
 
  *Output*:
- 
+
  - `CS`: Invertible SLIM coupling layer with learned data-to-image map
 
  *Usage:*
@@ -62,7 +62,7 @@ end
 @Flux.functor LearnedCouplingLayerSLIM
 
 # Constructor from input dimensions
-function LearnedCouplingLayerSLIM(nx1, nx2, nx_in, ny1, ny2, ny_in, n_hidden, batchsize; 
+function LearnedCouplingLayerSLIM(nx1, nx2, nx_in, ny1, ny2, ny_in, n_hidden, batchsize;
     k1=3, k2=3, p1=1, p2=1, s1=1, s2=1, logdet::Bool=false, permute::Bool=false)
 
     # 1x1 Convolution and residual block for invertible layer
@@ -123,7 +123,7 @@ function backward(ΔY::AbstractArray{Float32, 4}, Y::AbstractArray{Float32, 4}, 
     ΔX2_ = copy(ΔY2_)
     ΔX1_, ΔD = CS.RB.backward(ΔY2_, D.*0f0, tensor_split(X_)[1], D)[1:2]
     ΔX1_ += ΔY1_
-    
+
     ΔX_ = tensor_cat(ΔX1_, ΔX2_)
     isnothing(CS.C) ? (ΔX = copy(ΔX_)) : (ΔX = CS.C.inverse((ΔX_, X_))[1])
 
@@ -141,4 +141,10 @@ function get_params(CS::LearnedCouplingLayerSLIM)
     p = get_params(CS.RB)
     ~isnothing(CS.C) && (p = cat(p, get_params(CS.C); dims=1))
     return p
+end
+
+# Put parameters
+function put_params!(CS::LearnedCouplingLayerSLIM, Params::Array{Any,1})
+    put_params!(CS.RB, Params[1:5])
+    ~isnothing(CS.C) && put_params!(CS.C, Params[6:end])
 end
