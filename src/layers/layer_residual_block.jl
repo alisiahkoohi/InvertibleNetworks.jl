@@ -87,7 +87,7 @@ function ResidualBlock(nx, ny, n_in, n_hidden, batchsize; k1=3, k2=3, p1=1, p2=1
     # Initialize weights
     W1 = Parameter(glorot_uniform(k1, k1, n_in, n_hidden))
     W2 = Parameter(glorot_uniform(k2, k2, n_hidden, n_hidden))
-    W3 = Parameter(glorot_uniform(k1, k1, 2*n_in, n_hidden))
+    W3 = Parameter(zeros(Float32, k1, k1, 2*n_in, n_hidden))
     b1 = Parameter(zeros(Float32, n_hidden))
     b2 = Parameter(zeros(Float32, n_hidden))
 
@@ -134,7 +134,7 @@ function ResidualBlock(nx, ny, nz, n_in, n_hidden, batchsize; k1=3, k2=3, p1=1, 
     # Initialize weights
     W1 = Parameter(glorot_uniform(k1, k1, k1, n_in, n_hidden))
     W2 = Parameter(glorot_uniform(k2, k2, k2, n_hidden, n_hidden))
-    W3 = Parameter(glorot_uniform(k1, k1, k1, 2*n_in, n_hidden))
+    W3 = Parameter(zeros(Float32, k1, k1, k1, 2*n_in, n_hidden))
     b1 = Parameter(zeros(Float32, n_hidden))
     b2 = Parameter(zeros(Float32, n_hidden))
 
@@ -307,3 +307,4 @@ function put_params!(RB::ResidualBlock, Params::Array{Any,1})
     RB.b1.data = Params[4].data
     RB.b2.data = Params[5].data
 end
+
