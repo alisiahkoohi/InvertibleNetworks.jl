@@ -22,7 +22,7 @@ function test_inv(nx, ny, n_channel, n_hidden, batchsize, permute, logdet, rev)
     # HINT layer w/o logdet
     HL = CouplingLayerHINT(nx, ny, n_channel, n_hidden, batchsize; permute=permute, logdet=logdet)
     rev && (HL = reverse(HL))
-    # Test 
+    # Test
     Y = logdet ? HL.forward(X)[1] : HL.forward(X)
     X_ = HL.inverse(Y)
     @test isapprox(norm(X_ - X)/norm(X), 0f0; atol=1f-5)
@@ -55,7 +55,7 @@ function grad_test_X(nx, ny, n_channel, n_hidden, batchsize, permute, logdet, re
     # Test for input X
     HL = CouplingLayerHINT(nx, ny, n_channel, n_hidden, batchsize; permute=permute, logdet=logdet)
     rev && (HL = reverse(HL))
-        
+
     f0, gX, X_ = lossf(HL, X0)[[1,2,4]]
     @test isapprox(norm(X_ - X0)/norm(X0), 0f0; atol=1f-5)
 
@@ -88,6 +88,10 @@ function grad_test_layer(nx, ny, n_channel, n_hidden, batchsize, permute, logdet
     X = glorot_uniform(nx, ny, n_channel, batchsize)
     HL.CL[1].RB.W1.data *= 4f0
     HL0.CL[1].RB.W1.data *= 4f0 # make weights larger
+
+    HL.CL[1].RB.W3.data *= 10f0
+    HL0.CL[1].RB.W3.data *= 10f0 # make weights larger
+
     HLini = deepcopy(HL0)
     dW = HL.CL[1].RB.W1.data - HL0.CL[1].RB.W1.data
 
