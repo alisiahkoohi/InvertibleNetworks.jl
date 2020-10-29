@@ -125,7 +125,7 @@ function inverse(Zx, Zy, CH::ConditionalLayerHINT; logdet=nothing, x_lane=false)
 
     # X-lane: conditional layer
     YZ = tensor_cat(Yp, Zx)
-    logdet ? (X, logdet2) = CH.CL_YX.inverse(Yp, Zx)[2:3] : X = CH.CL_YX.inverse(Yp, Zx)[2]
+    logdet ? (X, logdet2) = CH.CL_YX.inverse(Yp, Zx; logdet=true)[2:3] : X = CH.CL_YX.inverse(Yp, Zx)[2]
 
     # X-lane: coupling layer
     logdet ? (Xp, logdet3) = CH.CL_X.inverse(X; logdet=true) : Xp = CH.CL_X.inverse(X; logdet=false)

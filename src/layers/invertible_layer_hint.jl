@@ -206,7 +206,7 @@ function inverse(Y, H::CouplingLayerHINT; scale=1, permute=nothing, logdet=nothi
     else
         Xa = copy(Ya)
         if logdet
-            Xb, logdet_full = H.CL[scale].inverse(Ya, Yb)[[2,3]]
+            Xb, logdet_full = H.CL[scale].inverse(Ya, Yb; logdet=true)[[2,3]]
         else
             Xb = H.CL[scale].inverse(Ya, Yb)[2]
             logdet_full = 0f0
